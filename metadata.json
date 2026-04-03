@@ -1,0 +1,7 @@
+{
+  "name": "RouteLive - Real-Time Transit Tracker",
+  "description": "A professional live tracking platform for commuters, school buses, and institutes with private invite-only tracking capabilities.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

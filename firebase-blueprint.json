@@ -1,0 +1,91 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and role.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["commuter", "driver", "institute_admin"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Route": {
+      "title": "Live Route",
+      "description": "A live tracking route for a bus, vehicle, or person.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["public", "private"] },
+        "instituteId": { "type": "string" },
+        "driverId": { "type": "string" },
+        "currentLocation": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+          }
+        },
+        "history": {
+          "type": "array",
+          "items": { "$ref": "RouteLocation" }
+        },
+        "plannedPath": {
+          "type": "array",
+          "items": { "$ref": "RouteLocation" }
+        },
+        "analytics": {
+          "type": "object",
+          "properties": {
+            "earliestArrivalYear": { "type": "string" },
+            "mostDelayedYear": { "type": "string" },
+            "averageTimeMinutes": { "type": "number" },
+            "lastDayTime": { "type": "string" },
+            "todayTime": { "type": "string" },
+            "tomorrowExpectedTime": { "type": "string" }
+          }
+        },
+        "isActive": { "type": "boolean" },
+        "lastUpdated": { "type": "string", "format": "date-time" },
+        "invitedUsers": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["id", "name", "type", "driverId", "isActive"]
+    },
+    "Institute": {
+      "title": "Institute",
+      "description": "An organization managing private routes.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "adminId": { "type": "string" },
+        "inviteCode": { "type": "string" }
+      },
+      "required": ["id", "name", "adminId"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "User profiles."
+    },
+    "/routes/{routeId}": {
+      "schema": "Route",
+      "description": "Live tracking routes."
+    },
+    "/institutes/{instituteId}": {
+      "schema": "Institute",
+      "description": "Institutes managing private routes."
+    }
+  }
+}

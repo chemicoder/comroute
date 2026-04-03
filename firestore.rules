@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {uid}
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required, email format)
+    //   - displayName: string (optional)
+    //   - photoURL: string (optional)
+    //   - role: string (required, ['commuter', 'driver', 'institute_admin'])
+    //   - createdAt: string (required, date-time)
+    //
+    // Collection: routes
+    // Document ID: {routeId}
+    // Fields:
+    //   - id: string (required)
+    //   - name: string (required)
+    //   - description: string (optional)
+    //   - type: string (required, ['public', 'private'])
+    //   - instituteId: string (optional)
+    //   - driverId: string (required)
+    //   - currentLocation: map (lat: number, lng: number, updatedAt: string)
+    //   - isActive: boolean (required)
+    //   - lastUpdated: string (required)
+    //
+    // Collection: institutes
+    // Document ID: {instituteId}
+    // Fields:
+    //   - id: string (required)
+    //   - name: string (required)
+    //   - adminId: string (required)
+    //   - inviteCode: string (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "ziaulnoor.zarnab@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /users/{uid} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(uid) && 
+        hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'role', 'createdAt']) &&
+        request.resource.data.role in ['commuter', 'driver', 'institute_admin'] &&
+        isValidEmail(request.resource.data.email);
+      allow update: if isOwner(uid) && 
+        hasOnlyAllowedFields(['uid', 'email', 'displayName', 'photoURL', 'role', 'createdAt']) &&
+        request.resource.data.role == resource.data.role;
+    }
+
+    match /routes/{routeId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        resource.data.type == 'public' || 
+        resource.data.driverId == request.auth.uid ||
+        (resource.data.type == 'private' && (
+          resource.data.driverId == request.auth.uid ||
+          (resource.data.instituteId != null && get(/databases/$(database)/documents/institutes/$(resource.data.instituteId)).data.adminId == request.auth.uid) ||
+          (resource.data.invitedUsers != null && request.auth.uid in resource.data.invitedUsers)
+        ))
+      );
+      
+      allow create: if isAuthenticated() && 
+        request.resource.data.driverId == request.auth.uid;
+        
+      allow update: if isAuthenticated() && (
+        resource.data.driverId == request.auth.uid ||
+        (resource.data.instituteId != null && get(/databases/$(database)/documents/institutes/$(resource.data.instituteId)).data.adminId == request.auth.uid)
+      );
+      
+      allow delete: if isAuthenticated() && (
+        resource.data.driverId == request.auth.uid ||
+        (resource.data.instituteId != null && get(/databases/$(database)/documents/institutes/$(resource.data.instituteId)).data.adminId == request.auth.uid)
+      );
+    }
+
+    match /institutes/{instituteId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.adminId == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.adminId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.adminId == request.auth.uid;
+    }
+  }
+}
