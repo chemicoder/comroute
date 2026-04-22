@@ -3,8 +3,10 @@ import { auth, db, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, where, onSnapshot, addDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { Plus, Users, Shield, Copy, Check, Mail, Trash2, Loader2 } from 'lucide-react';
 import { Institute, Route } from '../types';
+import { useApp } from '../lib/AppContext';
 
 export default function InstitutePanel() {
+  const { toast } = useApp();
   const [institute, setInstitute] = useState<Institute | null>(null);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -109,6 +111,7 @@ export default function InstitutePanel() {
     if (institute?.inviteCode) {
       navigator.clipboard.writeText(institute.inviteCode);
       setCopied(true);
+      toast('Invite code copied', 'success');
       setTimeout(() => setCopied(false), 2000);
     }
   };
@@ -116,13 +119,13 @@ export default function InstitutePanel() {
   if (!institute) {
     return (
       <div className="space-y-6">
-        <div className="p-6 bg-white rounded-2xl shadow-sm border border-slate-200">
+        <div className="p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
           <div className="flex flex-col items-center text-center gap-4">
             <div className="p-4 bg-blue-50 text-blue-600 rounded-full">
               <Shield size={32} />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-slate-900">Institute Admin</h2>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">Institute Admin</h2>
               <p className="text-slate-500 mt-1">Manage private tracking for your organization.</p>
             </div>
             <button 
@@ -150,7 +153,7 @@ export default function InstitutePanel() {
           </div>
         </div>
 
-        <div className="p-6 bg-white rounded-2xl shadow-sm border border-slate-200">
+        <div className="p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
           <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
             <Users size={18} className="text-blue-600" />
             Join Private Route
@@ -169,10 +172,10 @@ export default function InstitutePanel() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-6 bg-white rounded-2xl shadow-sm border border-slate-200">
+    <div className="flex flex-col gap-6 p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">{institute.name}</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">{institute.name}</h2>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-600">
               Invite Code: {institute.inviteCode}

@@ -1,20 +1,82 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# RouteLive
 
-# Run and deploy your AI Studio app
+Real-time bus and transit tracking for daily commuters. Live ETA, route history, shareable links, favorites, and offline-capable PWA.
 
-This contains everything you need to run your app locally.
+## Stack (all free tier)
 
-View your app in AI Studio: https://ai.studio/apps/8c228d4f-227e-40b8-8e3e-cd16fec4610b
+- **Frontend:** React 19 + Vite + TypeScript + Tailwind 4
+- **Maps:** Leaflet + OpenStreetMap (light) / CARTO (dark)
+- **Routing:** OSRM public demo
+- **Auth + DB:** Firebase Auth (Google) + Firestore
+- **Hosting:** Cloudflare Pages (unlimited bandwidth)
 
-## Run Locally
+## Run locally
 
-**Prerequisites:**  Node.js
+```bash
+npm install
+npm run dev
+```
 
+Open http://localhost:3000.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Build
+
+```bash
+npm run build   # outputs dist/
+npm run preview # serves the production build
+```
+
+## Deploy to Cloudflare Pages
+
+One-time login:
+
+```bash
+npx wrangler login
+```
+
+Then:
+
+```bash
+npm run deploy
+```
+
+The first deploy auto-creates the `routelive` project. Subsequent deploys push to the same project.
+
+### Before you publish
+
+Add your deployed domain to **Firebase Console → Authentication → Settings → Authorized domains** (for example `routelive.pages.dev`). Google sign-in will otherwise fail on production.
+
+## Features
+
+- Live bus location broadcasting with geolocation
+- OSRM-backed ETA with rush-hour traffic heuristic
+- Route stops with drag-and-drop editing (undo/redo)
+- Shareable live-view link per route (`/share/:id`)
+- Institute admin panel for private routes + invites
+- Favorites, dark mode, and browser push alerts when a favorite route is within 1.5 km
+- Installable PWA with offline tile + route caching
+- Web Share API with clipboard fallback
+
+## Project structure
+
+```
+src/
+  App.tsx                main app + share view + auth
+  firebase.ts            Firebase init + error handler
+  types.ts               shared types
+  components/
+    Map.tsx              Leaflet map + routes + stops
+    Search.tsx           search input
+    TrackingToggle.tsx   driver live-tracking controls
+    InstitutePanel.tsx   institute admin + private routes
+  lib/
+    AppContext.tsx       theme, favorites, toast provider
+    ErrorBoundary.tsx    top-level error boundary
+    geo.ts               haversine + history cap helpers
+    notifications.ts     Web Notifications + nearby alerts
+public/
+  icon.svg og-image.svg
+  _headers _redirects    Cloudflare Pages config
+firestore.rules          Firestore security rules
+wrangler.toml            Cloudflare Pages config
+```
