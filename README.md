@@ -1,20 +1,82 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# RouteLive
 
-# Run and deploy your AI Studio app
+Real-time bus and transit tracking for daily commuters. Live ETA, route history, shareable links, favorites, and offline-capable PWA.
 
-This contains everything you need to run your app locally.
+Live: https://chemicoder.github.io/comroute/
 
-View your app in AI Studio: https://ai.studio/apps/8c228d4f-227e-40b8-8e3e-cd16fec4610b
+## Stack (all free tier)
 
-## Run Locally
+- **Frontend:** React 19 + Vite + TypeScript + Tailwind 4
+- **Maps:** Leaflet + OpenStreetMap (light) / CARTO (dark)
+- **Routing:** OSRM public demo
+- **Auth + DB:** Firebase Auth (Google) + Firestore
+- **Hosting:** GitHub Pages (served from `/comroute/`)
 
-**Prerequisites:**  Node.js
+## Run locally
 
+```bash
+npm install
+npm run dev
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Open http://localhost:3000.
+
+## Build
+
+```bash
+npm run build   # outputs dist/
+npm run preview # serves the production build
+```
+
+## Deploy to GitHub Pages
+
+Pushes to `main` are auto-built and deployed by `.github/workflows/deploy.yml`.
+
+One-time setup in the repo:
+
+1. **Settings → Pages → Build and deployment → Source:** GitHub Actions.
+2. **Firebase Console → Authentication → Settings → Authorized domains:** add `chemicoder.github.io` (otherwise Google sign-in fails in production).
+
+### Local preview of the production bundle
+
+```bash
+npm run build
+npm run preview
+```
+
+The site is served from `/comroute/` to match the Pages URL.
+
+## Features
+
+- Live bus location broadcasting with geolocation
+- OSRM-backed ETA with rush-hour traffic heuristic
+- Route stops with drag-and-drop editing (undo/redo)
+- Shareable live-view link per route (`/share/:id`)
+- Institute admin panel for private routes + invites
+- Favorites, dark mode, and browser push alerts when a favorite route is within 1.5 km
+- Installable PWA with offline tile + route caching
+- Web Share API with clipboard fallback
+
+## Project structure
+
+```
+src/
+  App.tsx                main app + share view + auth
+  firebase.ts            Firebase init + error handler
+  types.ts               shared types
+  components/
+    Map.tsx              Leaflet map + routes + stops
+    Search.tsx           search input
+    TrackingToggle.tsx   driver live-tracking controls
+    InstitutePanel.tsx   institute admin + private routes
+  lib/
+    AppContext.tsx       theme, favorites, toast provider
+    ErrorBoundary.tsx    top-level error boundary
+    geo.ts               haversine + history cap helpers
+    notifications.ts     Web Notifications + nearby alerts
+public/
+  icon.svg og-image.svg
+  _headers _redirects    Cloudflare Pages config
+firestore.rules          Firestore security rules
+wrangler.toml            Cloudflare Pages config
+```

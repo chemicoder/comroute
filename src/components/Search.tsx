@@ -25,7 +25,7 @@ export default function Search({ onSearch }: SearchProps) {
           setQuery(e.target.value);
           onSearch(e.target.value);
         }}
-        className="block w-full pl-10 pr-10 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm placeholder-slate-400"
+        className="block w-full pl-10 pr-10 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm placeholder-slate-400 dark:placeholder-slate-500"
         placeholder="Search for a bus, area, or institute..."
       />
       {query && (
