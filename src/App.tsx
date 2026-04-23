@@ -449,7 +449,7 @@ function MainApp() {
 
   const generateShareLink = async () => {
     if (!activeRoute) return;
-    const link = `${window.location.origin}/share/${activeRoute.id}`;
+    const link = `${window.location.origin}${import.meta.env.BASE_URL}share/${activeRoute.id}`;
     try {
       await updateDoc(doc(db, 'routes', activeRoute.id), { shareableLink: link });
       if (navigator.share) {
@@ -1600,7 +1600,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AppProvider>
-        <Router>
+        <Router basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
           <Routes>
             <RouterRoute path="/share/:routeId" element={<ShareView />} />
             <RouterRoute path="*" element={<MainApp />} />

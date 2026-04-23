@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "deploy": "npm run build && npx wrangler pages deploy dist --project-name=routelive"
+    "deploy": "npm run build && cp dist/index.html dist/404.html && touch dist/.nojekyll"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.14",

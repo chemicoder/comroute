@@ -4,14 +4,17 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const BASE_URL = process.env.VITE_BASE_URL ?? '/comroute/';
+
 export default defineConfig(() => {
   return {
+    base: BASE_URL,
     plugins: [
       react(),
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icon.svg', 'og-image.svg', 'robots.txt'],
+        includeAssets: ['icon.svg', 'og-image.svg', 'robots.txt', '404.html'],
         manifest: {
           name: 'RouteLive - Real-time Transit Tracking',
           short_name: 'RouteLive',
@@ -20,17 +23,17 @@ export default defineConfig(() => {
           background_color: '#0f172a',
           display: 'standalone',
           orientation: 'portrait',
-          scope: '/',
-          start_url: '/',
+          scope: BASE_URL,
+          start_url: BASE_URL,
           categories: ['travel', 'navigation', 'utilities'],
           icons: [
-            { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
+            { src: `${BASE_URL}icon.svg`, sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
           ],
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,ico,webp}'],
-          navigateFallback: '/index.html',
-          navigateFallbackDenylist: [/^\/share\//],
+          navigateFallback: `${BASE_URL}index.html`,
+          navigateFallbackDenylist: [/\/share\//],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           runtimeCaching: [
             {

@@ -2,13 +2,15 @@
 
 Real-time bus and transit tracking for daily commuters. Live ETA, route history, shareable links, favorites, and offline-capable PWA.
 
+Live: https://chemicoder.github.io/comroute/
+
 ## Stack (all free tier)
 
 - **Frontend:** React 19 + Vite + TypeScript + Tailwind 4
 - **Maps:** Leaflet + OpenStreetMap (light) / CARTO (dark)
 - **Routing:** OSRM public demo
 - **Auth + DB:** Firebase Auth (Google) + Firestore
-- **Hosting:** Cloudflare Pages (unlimited bandwidth)
+- **Hosting:** GitHub Pages (served from `/comroute/`)
 
 ## Run locally
 
@@ -26,25 +28,23 @@ npm run build   # outputs dist/
 npm run preview # serves the production build
 ```
 
-## Deploy to Cloudflare Pages
+## Deploy to GitHub Pages
 
-One-time login:
+Pushes to `main` are auto-built and deployed by `.github/workflows/deploy.yml`.
+
+One-time setup in the repo:
+
+1. **Settings → Pages → Build and deployment → Source:** GitHub Actions.
+2. **Firebase Console → Authentication → Settings → Authorized domains:** add `chemicoder.github.io` (otherwise Google sign-in fails in production).
+
+### Local preview of the production bundle
 
 ```bash
-npx wrangler login
+npm run build
+npm run preview
 ```
 
-Then:
-
-```bash
-npm run deploy
-```
-
-The first deploy auto-creates the `routelive` project. Subsequent deploys push to the same project.
-
-### Before you publish
-
-Add your deployed domain to **Firebase Console → Authentication → Settings → Authorized domains** (for example `routelive.pages.dev`). Google sign-in will otherwise fail on production.
+The site is served from `/comroute/` to match the Pages URL.
 
 ## Features
 
