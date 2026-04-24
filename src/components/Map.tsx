@@ -21,15 +21,36 @@ const PinIcon = L.divIcon({
   iconAnchor: [16, 32],
 });
 
-const StopIcon = (color: string) =>
+const StopIcon = (color: string, label?: string) =>
   L.divIcon({
     className: 'custom-stop-icon',
-    html: `<div class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center shadow-md" style="background-color: ${color};">
-          <div class="w-2 h-2 bg-white rounded-full"></div>
+    html: `<div class="relative w-7 h-7 rounded-full border-2 border-white flex items-center justify-center shadow-md text-[10px] font-bold text-white" style="background-color: ${color};">
+          ${label ?? '<div class="w-2 h-2 bg-white rounded-full"></div>'}
         </div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
   });
+
+const StartIcon = L.divIcon({
+  className: 'custom-stop-icon',
+  html: `<div class="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center shadow-md text-[10px] font-bold text-white" style="background-color: #10b981;">A</div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+});
+
+const EndIcon = L.divIcon({
+  className: 'custom-stop-icon',
+  html: `<div class="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center shadow-md text-[10px] font-bold text-white" style="background-color: #ef4444;">B</div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+});
+
+const DraftIcon = L.divIcon({
+  className: 'custom-draft-icon',
+  html: `<div class="w-7 h-7 rounded-full border-2 border-white shadow-md animate-pulse" style="background-color: #f59e0b;"></div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+});
 
 function MapUpdater({ center }: { center: [number, number] }) {
   const map = useMap();
@@ -77,6 +98,7 @@ interface MapProps {
   onStopDragEnd?: (routeId: string, stopId: string, lat: number, lng: number) => void;
   onPolylineClick?: (routeId: string, lat: number, lng: number) => void;
   onMapClick?: (lat: number, lng: number) => void;
+  draftStopLocation?: [number, number] | null;
 }
 
 const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
@@ -94,6 +116,7 @@ export default function Map({
   onStopDragEnd,
   onPolylineClick,
   onMapClick,
+  draftStopLocation,
 }: MapProps) {
   const { theme } = useApp();
   const defaultCenter: [number, number] = userLocation || [23.8103, 90.4125];
@@ -245,6 +268,10 @@ export default function Map({
           </Marker>
         )}
 
+        {draftStopLocation && (
+          <Marker position={draftStopLocation} icon={DraftIcon} interactive={false} />
+        )}
+
         {routes.map((route) => {
           const isSelected = selectedRouteId === route.id;
           const roadPath = roadPaths[route.id];
@@ -291,28 +318,41 @@ export default function Map({
               )}
 
               {isSelected &&
-                route.stops?.map((stop) => (
-                  <Marker
-                    key={stop.id}
-                    position={[stop.lat, stop.lng]}
-                    icon={StopIcon(routeColor)}
-                    draggable={isEditingStops}
-                    eventHandlers={{
-                      dragend: (e) => {
-                        const marker = e.target;
-                        const position = marker.getLatLng();
-                        onStopDragEnd?.(route.id, stop.id, position.lat, position.lng);
-                      },
-                    }}
-                  >
-                    <Popup>
-                      <div className="p-1">
-                        <p className="font-bold text-sm text-slate-900">{stop.name}</p>
-                        <p className="text-xs text-slate-500">ETA: {stop.arrivalTime}</p>
-                      </div>
-                    </Popup>
-                  </Marker>
-                ))}
+                route.stops?.map((stop, idx) => {
+                  const total = route.stops?.length ?? 0;
+                  const isFirst = idx === 0;
+                  const isLast = total > 1 && idx === total - 1;
+                  const icon = isFirst
+                    ? StartIcon
+                    : isLast
+                      ? EndIcon
+                      : StopIcon(routeColor, String(idx + 1));
+                  return (
+                    <Marker
+                      key={stop.id}
+                      position={[stop.lat, stop.lng]}
+                      icon={icon}
+                      draggable={isEditingStops}
+                      eventHandlers={{
+                        dragend: (e) => {
+                          const marker = e.target;
+                          const position = marker.getLatLng();
+                          onStopDragEnd?.(route.id, stop.id, position.lat, position.lng);
+                        },
+                      }}
+                    >
+                      <Popup>
+                        <div className="p-1">
+                          <p className="font-bold text-sm text-slate-900">
+                            {isFirst ? 'Start · ' : isLast ? 'End · ' : `Stop ${idx + 1} · `}
+                            {stop.name}
+                          </p>
+                          <p className="text-xs text-slate-500">ETA: {stop.arrivalTime}</p>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  );
+                })}
             </div>
           );
         })}
