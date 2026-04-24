@@ -378,7 +378,19 @@ function MainApp() {
       await signInWithPopup(auth, provider);
     } catch (error) {
       console.error('Login failed', error);
-      toast('Sign-in failed. Please try again.', 'error');
+      const code = (error as { code?: string })?.code ?? '';
+      if (code === 'auth/unauthorized-domain') {
+        toast(
+          `Add "${window.location.hostname}" to Firebase Console → Auth → Settings → Authorized domains, then retry.`,
+          'error',
+        );
+      } else if (code === 'auth/popup-blocked') {
+        toast('Popup blocked — allow popups for this site and retry.', 'error');
+      } else if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        return;
+      } else {
+        toast(`Sign-in failed${code ? ` (${code})` : ''}. Please try again.`, 'error');
+      }
     }
   };
 
