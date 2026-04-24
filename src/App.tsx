@@ -529,17 +529,26 @@ function MainApp() {
     }
   }, [activeRoute?.id]);
 
+  const formatLocalTime = (date: Date) =>
+    `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
   const onMapClick = (lat: number, lng: number) => {
     if (!isEditingStops || !activeRoute) return;
-    setNewStopPrompt({ isOpen: true, lat, lng, name: '', arrivalTime: '' });
+    const currentStops = stopsHistory[stopsHistoryIndex] || [];
+    const stopIndex = currentStops.length;
+    const suggestedName = stopIndex === 0 ? 'Start' : `Stop ${stopIndex + 1}`;
+    const suggestedTime = formatLocalTime(new Date(Date.now() + (stopIndex + 1) * 5 * 60_000));
+    setNewStopPrompt({ isOpen: true, lat, lng, name: suggestedName, arrivalTime: suggestedTime });
   };
 
   const handleAddStopSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStopPrompt || !newStopPrompt.name) return;
+    if (!newStopPrompt) return;
+    const trimmedName = newStopPrompt.name.trim();
+    if (!trimmedName) return;
     const newStop: RouteStop = {
       id: Math.random().toString(36).substring(2, 9),
-      name: newStopPrompt.name,
+      name: trimmedName,
       lat: newStopPrompt.lat,
       lng: newStopPrompt.lng,
       arrivalTime: newStopPrompt.arrivalTime || '--:--',
@@ -552,6 +561,15 @@ function MainApp() {
     setStopsHistoryIndex(newHistory.length - 1);
     setNewStopPrompt(null);
   };
+
+  useEffect(() => {
+    if (!newStopPrompt) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setNewStopPrompt(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [newStopPrompt]);
 
   const onStopDragEnd = (routeId: string, stopId: string, lat: number, lng: number) => {
     if (!isEditingStops || activeRoute?.id !== routeId) return;
@@ -1047,6 +1065,9 @@ function MainApp() {
             isEditingStops={isEditingStops}
             onStopDragEnd={onStopDragEnd}
             onMapClick={onMapClick}
+            draftStopLocation={
+              newStopPrompt ? [newStopPrompt.lat, newStopPrompt.lng] : null
+            }
           />
           {userLocation && (
             <button
@@ -1067,66 +1088,76 @@ function MainApp() {
             </div>
           )}
 
+          {isEditingStops && !newStopPrompt && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg text-sm font-medium flex items-center gap-2 pointer-events-none">
+              <MapIcon size={14} />
+              {(stopsHistory[stopsHistoryIndex]?.length ?? 0) === 0
+                ? 'Tap the map to drop your start stop'
+                : `Tap to add stop ${(stopsHistory[stopsHistoryIndex]?.length ?? 0) + 1} · drag any pin to adjust`}
+            </div>
+          )}
+
           {newStopPrompt && newStopPrompt.isOpen && (
-            <div className="absolute inset-0 z-[2000] bg-slate-900/20 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800">
-                  <h3 className="font-bold text-slate-900 dark:text-slate-50">Add New Stop</h3>
-                  <button
-                    onClick={() => setNewStopPrompt(null)}
-                    className="text-slate-400 hover:text-slate-600"
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[2000] w-[min(92vw,360px)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
+              <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      (stopsHistory[stopsHistoryIndex]?.length ?? 0) === 0
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
+                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                    }`}
                   >
-                    <X size={18} />
+                    {(stopsHistory[stopsHistoryIndex]?.length ?? 0) === 0
+                      ? 'Start'
+                      : `Stop ${(stopsHistory[stopsHistoryIndex]?.length ?? 0) + 1}`}
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                    {newStopPrompt.lat.toFixed(4)}, {newStopPrompt.lng.toFixed(4)}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setNewStopPrompt(null)}
+                  className="text-slate-400 hover:text-slate-600"
+                  aria-label="Cancel"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <form onSubmit={handleAddStopSubmit} className="p-3 space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    autoFocus
+                    required
+                    placeholder="Stop name"
+                    className="flex-1 min-w-0 px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+                    value={newStopPrompt.name}
+                    onChange={(e) =>
+                      setNewStopPrompt({ ...newStopPrompt, name: e.target.value })
+                    }
+                  />
+                  <input
+                    type="time"
+                    className="w-28 px-2 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm"
+                    value={newStopPrompt.arrivalTime}
+                    onChange={(e) =>
+                      setNewStopPrompt({ ...newStopPrompt, arrivalTime: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Press Enter to save · Esc to cancel
+                  </span>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 bg-blue-600 text-white rounded-lg font-semibold text-xs hover:bg-blue-700 transition-colors"
+                  >
+                    Add stop
                   </button>
                 </div>
-                <form onSubmit={handleAddStopSubmit} className="p-4 space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                      Stop Name
-                    </label>
-                    <input
-                      type="text"
-                      autoFocus
-                      required
-                      placeholder="e.g., Central Station"
-                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                      value={newStopPrompt.name}
-                      onChange={(e) =>
-                        setNewStopPrompt({ ...newStopPrompt, name: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                      Estimated Arrival (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g., 08:30 AM"
-                      className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                      value={newStopPrompt.arrivalTime}
-                      onChange={(e) =>
-                        setNewStopPrompt({ ...newStopPrompt, arrivalTime: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="pt-2 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setNewStopPrompt(null)}
-                      className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-semibold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 py-2 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 transition-colors"
-                    >
-                      Add Stop
-                    </button>
-                  </div>
-                </form>
-              </div>
+              </form>
             </div>
           )}
         </div>
